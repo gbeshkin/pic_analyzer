@@ -12,7 +12,7 @@ TOKEN = "7762588264:AAH5ovrQYzssK5Q8dDY4kWUUoZ2vSu8mHZA"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Hello! Send me a photo, and I will analyze its color correction. After the analysis, I will offer you the processed photo for download."
+        "Hello! Send me a photo, and I will analyze its color correction. I will also provide Lightroom adjustment recommendations."
     )
 
 async def analyze_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -23,14 +23,16 @@ async def analyze_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         analysis = analyze_colors(img)
         response = format_analysis(analysis)
+        lightroom_recommendations = generate_lightroom_tips(analysis)
 
         corrected_img = apply_corrections(img, analysis)
-
         corrected_img_bytes = cv2.imencode(".jpg", corrected_img)[1].tobytes()
         bio = BytesIO(corrected_img_bytes)
         bio.name = "corrected_photo.jpg"
 
-        await update.message.reply_text(response)
+        full_response = f"{response}\n\n💡 Lightroom Recommendations:\n{lightroom_recommendations}"
+
+        await update.message.reply_text(full_response)
         await update.message.reply_document(
             document=bio,
             caption="🖼️ Here is the processed photo. Download it!",
@@ -67,6 +69,27 @@ def format_analysis(analysis):
     if not tips:
         return "✅ The photo looks good! There are no significant color correction issues."
     return "\n".join(["📸 Analysis results:"] + tips)
+
+def generate_lightroom_tips(analysis):
+    tips = []
+    if analysis["brightness"] == "Low":
+        tips.append("Increase Exposure by +0.3 to +0.7 in the Basic Panel.")
+    elif analysis["brightness"] == "High":
+        tips.append("Decrease Exposure by -0.3 to -0.7 in the Basic Panel.")
+    
+    if analysis["saturation"] == "Low":
+        tips.append("Increase Vibrance by +10 to +25, and Saturation slightly.")
+    elif analysis["saturation"] == "High":
+        tips.append("Decrease Vibrance by -10 to -25 to reduce oversaturation.")
+    
+    if "Shifted to warm tones" in analysis["hue_balance"]:
+        tips.append("Adjust Temperature slider slightly towards the cooler side (-5 to -15).")
+    elif "Shifted to cool tones" in analysis["hue_balance"]:
+        tips.append("Adjust Temperature slider slightly towards the warmer side (+5 to +15).")
+    
+    if not tips:
+        return "✅ The photo is well-balanced. No Lightroom adjustments needed."
+    return "\n".join(tips)
 
 def apply_corrections(img, analysis):
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV).astype(np.float32)
