@@ -87,6 +87,12 @@ def generate_lightroom_tips(analysis):
     elif "Shifted to cool tones" in analysis["hue_balance"]:
         tips.append("Adjust Temperature slider slightly towards the warmer side (+5 to +15).")
     
+    tips.append("Adjust Contrast to improve overall depth.")
+    tips.append("Fine-tune Highlights and Shadows to bring out details.")
+    tips.append("Use the Clarity slider for midtone contrast enhancement.")
+    tips.append("Check the Sharpening panel to enhance image details without introducing noise.")
+    tips.append("If noise is detected, reduce Luminance Noise in the Detail panel.")
+    
     if not tips:
         return "✅ The photo is well-balanced. No Lightroom adjustments needed."
     return "\n".join(tips)
